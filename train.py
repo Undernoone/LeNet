@@ -33,42 +33,46 @@ scheduler = lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
 
 # Train the model
 def train(dataloader, model, loss_func, optimizer, scheduler, device):
-    loss, concurrent_acc, epoch= 0, 0, 0
+    model.train()
+    total_loss, total_correct, total_samples = 0.0, 0, 0
     for batch_idx, (data, target) in enumerate(dataloader):
         data, target = data.to(device), target.to(device)
         output = model(data)
         loss = loss_func(output, target)
-        _, pred = torch.max(output, 1)
-        concurrent_acc = torch.sum(pred == target)/output.shape[0]
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-        loss += loss.item()
-        concurrent_acc += concurrent_acc.item()
+        total_loss += loss.item() * data.size(0)
+        _, pred = torch.max(output, 1)
+        total_correct += (pred == target).sum().item()
+        total_samples += data.size(0)
         epoch += 1
-    print("train_loss:"+str(loss/epoch))
-    print("train_acc:"+str(concurrent_acc/epoch))
+    average_loss = total_loss / total_samples
+    accuracy = total_correct / total_samples
+    print(f"train_loss: {average_loss:.4f}")
+    print(f"train_acc: {accuracy:.4f}")
+
 
 # Test the model
 def test(dataloader, model, loss_func, device):
     model.eval()
-    loss, concurrent_acc, epoch= 0, 0, 0
-    with torch.no_grad():
-        for batch_idx, (data, target) in enumerate(dataloader):
-            data, target = data.to(device), target.to(device)
-            output = model(data)
-            loss = loss_func(output, target)
-            _, pred = torch.max(output, 1)
-            concurrent_acc = torch.sum(pred == target)/output.shape[0]
-            loss += loss.item()
-            concurrent_acc += concurrent_acc.item()
-            epoch += 1
-        print("test_loss:"+str(loss/epoch))
-        print("test_acc:"+str(concurrent_acc/epoch))
-        return concurrent_acc/epoch
+    total_loss, total_correct, total_samples= 0.0, 0, 0
+    for batch_idx, (data, target) in enumerate(dataloader):
+        data, target = data.to(device), target.to(device)
+        output = model(data)
+        loss = loss_func(output, target)
+        total_loss += loss.item() * data.size(0)
+        _, pred = torch.max(output, 1)
+        total_correct += (pred == target).sum().item()
+        total_samples += data.size(0)
+    average_loss = total_loss / total_samples
+    accuracy = total_correct / total_samples
+    print(f"test_loss: {average_loss:.4f}")
+    print(f"test_acc: {accuracy:.4f}")
+    return accuracy
 
 # Start training
-epochs = 5
+epochs = 50
 min_acc = 0
 for epoch in range(epochs):
     print(f'epoch {epoch+1}\n----------------')

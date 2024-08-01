@@ -26,12 +26,8 @@ model.load_state_dict(torch.load('D:/LeNet/saved_model/best_model.pth'))
 
 classes = ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9')
 
-# Tensor to picture
-show = ToPILImage()
-
 for i in range(10):
     img, label = test_dataset[i][0], train_dataset[i][1]
-    show(img).show()
     img = Variable(torch.unsqueeze(img, 0)).to(device)
     with torch.no_grad():
         output = model(img)
